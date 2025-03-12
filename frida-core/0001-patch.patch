@@ -9,6 +9,7 @@ Subject: [PATCH] patch
  lib/base/socket.vala                  | 4 ++--
  server/server.vala                    | 3 ++-
  src/agent-container.vala              | 2 +-
+ src/anti-anti-frida.py                | 27 +++++++++++++++++++++++++++
  src/darwin/darwin-host-session.vala   | 2 +-
  src/droidy/droidy-client.vala         | 2 +-
  src/freebsd/binjector-glue.c          | 2 +-
@@ -19,7 +20,7 @@ Subject: [PATCH] patch
  src/windows/windows-host-session.vala | 2 +-
  tests/test-agent.vala                 | 2 +-
  tests/test-injector.vala              | 2 +-
- 15 files changed, 23 insertions(+), 21 deletions(-)
+ 16 files changed, 50 insertions(+), 21 deletions(-)
 
 diff --git a/inject/inject.vala b/inject/inject.vala
 index 84042dda..a0f03ec8 100644
@@ -111,7 +112,41 @@ index 73e0c017..a3db1112 100644
 +			var main_func_found = container.module.symbol ("main", out main_func_symbol);
  			assert (main_func_found);
  			container.main_impl = (AgentMainFunc) main_func_symbol;
- 
+
+diff --git a/src/anti-anti-frida.py b/src/anti-anti-frida.py
+new file mode 100644
+index 00000000..a203189f
+--- /dev/null
++++ b/src/anti-anti-frida.py
+@@ -0,0 +1,27 @@
++import lief
++import sys
++import random
++import os
++
++if __name__ == "__main__":
++    input_file = sys.argv[1]
++    print(f"[*] Patch frida-agent: {input_file}")
++    random_name = "".join(random.sample("ABCDEFGHIJKLMNO", 5))
++    print(f"[*] Patch `frida` to `{random_name}``")
++
++    binary = lief.parse(input_file)
++
++    if not binary:
++        exit()
++
++    for symbol in binary.symbols:
++        if symbol.name == "frida_agent_main":
++            symbol.name = "main"
++        
++        if "frida" in symbol.name:
++            symbol.name = symbol.name.replace("frida", random_name)
++
++        if "FRIDA" in symbol.name:
++            symbol.name = symbol.name.replace("FRIDA", random_name)
++
++    binary.write(input_file)
+\ No newline at end of file
 diff --git a/src/darwin/darwin-host-session.vala b/src/darwin/darwin-host-session.vala
 index ab9b2900..4369922d 100644
 --- a/src/darwin/darwin-host-session.vala
